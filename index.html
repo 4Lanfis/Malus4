@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malus Stufe 4 - Cyber Grid</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #050505;
+            color: #d4d4d4;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #262626;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #525252;
+        }
+
+        /* Cyberpunk / Brutalist Boxen */
+        .cyber-box {
+            border: 1px solid #262626;
+            transition: all 0.2s ease;
+        }
+        .cyber-box:hover {
+            border-color: #525252;
+        }
+
+        .ascii-dot {
+            color: #e5e5e5;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .ascii-dot:hover {
+            color: #ffffff;
+            text-shadow: 0 0 10px #ffffff;
+            transform: scale(1.3);
+        }
+
+        .cyber-btn {
+            border: 1px solid #404040;
+            background: #171717;
+            color: #a3a3a3;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+        .cyber-btn:hover {
+            border-color: #a3a3a3;
+            color: #ffffff;
+            background: #262626;
+        }
+
+        .cyber-btn-copy {
+            border-color: #22c55e;
+            color: #4ade80;
+            background: rgba(34, 197, 94, 0.1);
+        }
+        .cyber-btn-copy:hover {
+            background: rgba(34, 197, 94, 0.25);
+            color: #ffffff;
+        }
+
+        .cyber-btn-confirm {
+            border-color: #ef4444;
+            color: #f87171;
+            background: rgba(239, 68, 68, 0.2);
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-3 sm:p-6 select-none">
+
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="fixed top-4 bg-neutral-900 border border-neutral-700 text-white font-bold px-4 py-3 text-xs sm:text-sm font-mono shadow-2xl transition-all duration-300 -translate-y-20 opacity-0 z-50 rounded">
+        [!] <span id="toast-message">MELDUNG</span>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="w-full max-w-4xl bg-neutral-950 cyber-box p-4 sm:p-6 rounded-lg shadow-2xl">
+        
+        <!-- Header ohne ASCII Art -->
+        <div class="border-b border-neutral-800 pb-4 mb-6 text-center">
+            <h1 class="text-xl sm:text-3xl font-extrabold tracking-wider text-white">MALUS STUFE 4</h1>
+            <p class="text-xs text-neutral-500 font-mono mt-1">50 Passwörter // Security Grid Level 04</p>
+            
+            <!-- Dynamic Stats Bar -->
+            <div class="flex justify-center gap-6 mt-4 text-[11px] font-mono text-neutral-400">
+                <div class="bg-neutral-900 px-3 py-1 rounded border border-neutral-800">
+                    STATUS: <span class="text-emerald-400 font-bold">ONLINE</span>
+                </div>
+                <div class="bg-neutral-900 px-3 py-1 rounded border border-neutral-800">
+                    GEOFNET: <span id="stat-revealed" class="text-white font-bold">0 / 50</span>
+                </div>
+                <div class="bg-neutral-900 px-3 py-1 rounded border border-neutral-800">
+                    SAFETY TIMEOUT: <span class="text-amber-400 font-bold">2 SEK</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password List Grid -->
+        <div id="password-list" class="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-sm max-h-[60vh] overflow-y-auto pr-2">
+            <!-- Items via JavaScript -->
+        </div>
+
+        <!-- Footer Bar -->
+        <div class="mt-6 pt-3 border-t border-neutral-800 flex justify-between text-[11px] text-neutral-500 font-mono">
+            <span>GRID_ID: #8892-M4</span>
+            <span>2-STEP VERIFICATION REQUIRED</span>
+        </div>
+    </div>
+
+    <script>
+        // 50 Festgelegte 16-stellige Passwörter
+        const FIXED_PASSWORDS = [
+            "xK9#mP2$vL8!qN5w", "aR7&tW4*yU1^zB9q", "mK3$vP8!qN5wX9#L", "bT8*yU2^zB9qC4@x", "pW5!qN9wX2#LmR7$",
+            "cJ9^zB1qC5@xD3&y", "vN2wX8#LmS4$pQ6!", "dK4@xD6&yE8*zF1^", "zX7#LmP3$qN9!wV2", "eM5&yF9*zG2^aH4@",
+            "fP1!qR3$wS5#tT7*", "gQ8^zH2@aJ4&bK6$", "hR9*aK3#bL5!cM7%", "jS2$bL4!cM6*dN8^", "kT3%cM5*dN7^eP9@",
+            "lU4^dN6@eP8$fQ1*", "mV5@eP7$fQ9*gR2#", "nW6$fQ8*gR1#hS3!", "pX7*gR9#hS2!jT4%", "qY8#hS1!jT3%kU5^",
+            "rZ9!jT2%kU4^lV6@", "sA1%kU3^lV5@mW7$", "tB2^lV4@mW6$nX8*", "uC3@mW5$nX7*pY9#", "vD4$nX6*pY8#qZ1!",
+            "wE5*pY7#qZ9!rA2%", "xF6#qZ8!rA1%sB3^", "yG7!rA9%sB2^tC4@", "zH8%sB1^tC3@uD5$", "aJ9^tC2@uD4$vE6*",
+            "bK1@uD3$vE5*wF7#", "cL2$vE4*wF6#xG8!", "dM3*wF5#xG7!yH9%", "eN4#xG6!yH8%zJ1^", "fP5!yH7%zJ9^aK2@",
+            "gQ6%zJ8^aK1@bL3$", "hR7^aK9@bL2$cM4*", "jS8@bL1$cM3*dN5#", "kT9$cM2*dN4#eP6!", "lU1*dN3#eP5!fQ7%",
+            "mV2#eP4!fQ6%gR8^", "nW3!fQ5%gR7^hS9@", "pX4%gR6^hS8@jT1$", "qY5^hS7@jT9$kU2*", "rZ6@jT8$kU1*lV3#",
+            "sA7$kU9*lV2#mW4!", "tB8*lV1#mW3!nX5%", "uC9#mW2!nX4%pY6^", "vD1!nX3%pY5^qZ7@", "wE2%pY4^qZ6@rA8$"
+        ];
+
+        // Status-Arrays
+        const revealedStates = new Array(FIXED_PASSWORDS.length).fill(false);
+        const maskStates = new Array(FIXED_PASSWORDS.length).fill(false); // Standard: verdeckt
+        const copyConfirmStates = new Array(FIXED_PASSWORDS.length).fill(null);
+
+        const passwordListEl = document.getElementById('password-list');
+        const statRevealedEl = document.getElementById('stat-revealed');
+        const toast = document.getElementById('toast');
+
+        // Render-Funktion
+        function renderPasswordList() {
+            if (!passwordListEl) return;
+            
+            passwordListEl.innerHTML = '';
+            let revealedCount = 0;
+
+            FIXED_PASSWORDS.forEach((pass, index) => {
+                const isRevealed = revealedStates[index];
+                const isTextVisible = maskStates[index];
+                const isConfirming = copyConfirmStates[index] !== null;
+                const numFormatted = String(index + 1).padStart(2, '0');
+
+                if (isRevealed) revealedCount++;
+
+                const itemWrapper = document.createElement('div');
+
+                if (!isRevealed) {
+                    // Geschlossener Zustand: Sichtbarer Punkt .
+                    itemWrapper.className = "cyber-box p-3 flex items-center justify-between bg-neutral-950 rounded border-neutral-800 hover:border-neutral-700";
+                    itemWrapper.innerHTML = `
+                        <span class="text-[10px] text-neutral-500 font-mono">#${numFormatted}</span>
+                        <div class="flex-grow text-center">
+                            <span onclick="revealPassword(${index})" class="ascii-dot font-extrabold text-2xl inline-block px-6 py-1 select-none" title="Klicken zum Öffnen">.</span>
+                        </div>
+                        <span class="text-[9px] text-neutral-600 font-mono">[LOCKED]</span>
+                    `;
+                } else {
+                    // Aufgedeckter Zustand
+                    const displayVal = isTextVisible ? pass : "****************";
+                    itemWrapper.className = "cyber-box p-3 flex flex-col gap-2 bg-neutral-900 rounded border-neutral-700";
+                    itemWrapper.innerHTML = `
+                        <div class="flex items-center justify-between border-b border-neutral-800 pb-1">
+                            <span class="text-[10px] text-neutral-400 font-mono">KEY #${numFormatted}</span>
+                            <button onclick="toggleMask(${index})" class="cyber-btn text-[10px] px-2 py-0.5 rounded">
+                                ${isTextVisible ? '[ VERBERGEN ]' : '[ ANZEIGEN ]'}
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 my-1">
+                            <span class="font-mono tracking-wider text-white text-xs sm:text-sm select-all">${displayVal}</span>
+                            <button onclick="handleCopyClick(${index})" class="cyber-btn ${isConfirming ? 'cyber-btn-confirm' : 'cyber-btn-copy'} text-[10px] font-bold px-3 py-1.5 rounded transition-all">
+                                ${isConfirming ? '[ BESTÄTIGEN? ]' : '[ KOPIEREN ]'}
+                            </button>
+                        </div>
+                    `;
+                }
+
+                passwordListEl.appendChild(itemWrapper);
+            });
+
+            if (statRevealedEl) {
+                statRevealedEl.textContent = `${revealedCount} / 50`;
+            }
+        }
+
+        function revealPassword(index) {
+            revealedStates[index] = true;
+            renderPasswordList();
+        }
+
+        function toggleMask(index) {
+            maskStates[index] = !maskStates[index];
+            renderPasswordList();
+        }
+
+        // 2-Schritt-Kopiervorgang (2 Sekunden Zeitfenster)
+        function handleCopyClick(index) {
+            if (copyConfirmStates[index] === null) {
+                // Erster Klick -> Startet 2-Sekunden Timer
+                showToast(`SCHRITT 1/2: ERNEUT DRÜCKEN ZUM BESTÄTIGEN!`);
+                
+                // Alle anderen offenen Timer löschen
+                copyConfirmStates.forEach((timer, i) => {
+                    if (timer) {
+                        clearTimeout(timer);
+                        copyConfirmStates[i] = null;
+                    }
+                });
+
+                const timeoutId = setTimeout(() => {
+                    copyConfirmStates[index] = null;
+                    renderPasswordList();
+                }, 2000); // Exakt 2 Sekunden
+
+                copyConfirmStates[index] = timeoutId;
+                renderPasswordList();
+            } else {
+                // Zweiter Klick innerhalb 2s -> Ausführen
+                clearTimeout(copyConfirmStates[index]);
+                copyConfirmStates[index] = null;
+                
+                copyToClipboard(index);
+                renderPasswordList();
+            }
+        }
+
+        function copyToClipboard(index) {
+            const realPassword = FIXED_PASSWORDS[index];
+            
+            const tempInput = document.createElement('textarea');
+            tempInput.value = realPassword;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast(`PASSWORT #${index + 1} ERFOLGREICH KOPIERT!`);
+                } else {
+                    showToast('FEHLER BEIM KOPIEREN!');
+                }
+            } catch (err) {
+                showToast('NICHT UNTERSTÜTZT!');
+            }
+            
+            document.body.removeChild(tempInput);
+        }
+
+        let toastTimeout;
+        function showToast(message) {
+            const toastMsg = document.getElementById('toast-message');
+            if (toastMsg && toast) {
+                toastMsg.textContent = message;
+
+                toast.classList.remove('-translate-y-20', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+
+                clearTimeout(toastTimeout);
+                toastTimeout = setTimeout(() => {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('-translate-y-20', 'opacity-0');
+                }, 2000);
+            }
+        }
+
+        window.onload = function() {
+            renderPasswordList();
+        };
+    </script>
+</body>
+</html>
